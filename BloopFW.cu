@@ -46,9 +46,7 @@ void FloydWarshall(int k, int i, float *matrix, int n)
     int tckr = matrix[k*n + col]; /* this column, kth row */
     
     int betterMaybe = trkc + tckr;
-    
-    if(betterMaybe < matrix[arrayIndex])
-        matrix[arrayIndex] = betterMaybe;
+    matrix[arrayIndex] = fmin(matrix[arrayIndex], betterMaybe);
 }
 
 
@@ -91,8 +89,7 @@ int main(int argc, char *argv[])
 
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
-    dim3 blocks_per_grid((vertices + threads_per_block - 1) /
-                                threads_per_block, vertices);
+    int blocks_per_grid = vertices + (threads_per_block - 1) /threads_per_block;
 
     for(int via = 0; via < vertices; via++) {
 	for(int j = 0; j < vertices; j++){
