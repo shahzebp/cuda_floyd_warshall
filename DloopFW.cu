@@ -43,14 +43,8 @@ void FloydWarshall(int k, float *matrix, int n)
     
     __syncthreads();
     
-    if(trkc == INT_MAX) /* infinity */
-        return;
-    
     int tckr = matrix[k*n + col]; /* this column, kth row */
     
-    if(tckr == INT_MAX) /* infinity */
-        return;
-
     int betterMaybe = trkc + tckr;
     
     if(betterMaybe < matrix[arrayIndex])
