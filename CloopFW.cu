@@ -62,8 +62,10 @@ void FloydWarshall(int k, int i, float *matrix, int n)
 int main(int argc, char *argv[])
 {      
     char *arg_vertices = getenv("N_VERTICES");
+    char *arg_threads_per_block = getenv("N_THREADS");
 	
     size_t vertices = atoi(arg_vertices);
+    int threads_per_block   = atoi(arg_threads_per_block);
    
     float *host_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
@@ -95,7 +97,6 @@ int main(int argc, char *argv[])
 
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
-    int threads_per_block   = 32;
     dim3 blocks_per_grid((vertices + threads_per_block - 1) /
                                 threads_per_block, vertices);
 
