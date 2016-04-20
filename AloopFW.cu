@@ -27,22 +27,10 @@ void init(float *matrix, int n)
 }
 
 __global__
-void FloydWarshall(float *matrix, int n)
+void FloydWarshall(int via, int from, int to, float *matrix, int n)
 {
-        
-	for(int via=0; via < n; via++) {
-	    for(int from=0;from<n;from++) {
-            for(int to=0;to<n;to++) {
-                if(from!=to && from!=via && to!=via) {
-
-				    matrix[from * n + to] = min(matrix[from * n + to], 
+    matrix[from * n + to] = min(matrix[from * n + to], 
                             matrix[from * n + via] + matrix[via * n + to]);
-
-			    }
-                        
-            }
-        }
-   	}
 }
 
 
@@ -82,8 +70,17 @@ int main(int argc, char *argv[])
 
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
-	//FloydWarshall(host_matrix, vertices);
-	FloydWarshall<<<1, 1>>>(device_matrix, vertices);
+    for(int via = 0; via < vertices; via++) {
+	    for(int from = 0; from < vertices ; from++) {
+            for(int to = 0; to < vertices;to++) {
+                if(from!=to && from!=via && to!=via) {
+
+                	FloydWarshall<<<1, 1>>>(via, from, to, device_matrix, vertices);
+                    cudaThreadSynchronize();
+                }
+            }
+        }
+    }
 
     float *result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
