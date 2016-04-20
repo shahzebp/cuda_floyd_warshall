@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
 
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
-    int threads_per_block   = 1024;
     dim3 blocks_per_grid((vertices + threads_per_block - 1) /
                                 threads_per_block, vertices);
 
