@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <limits.h>
 #include <algorithm>
-
+#include <sys/time.h>
 #include <cuda_runtime.h>
 
 using namespace std;
@@ -92,24 +92,19 @@ int main(int argc, char *argv[])
     int threads_per_block   = 1024;
     dim3 blocks_per_grid((vertices + threads_per_block - 1) /
                                 threads_per_block, vertices);
-
+    struct timeval tvalBefore, tvalAfter;
+    gettimeofday (&tvalBefore, NULL);
     for(int via = 0; via < vertices; via++) {
 
 	    FloydWarshall<<<blocks_per_grid, threads_per_block>>>(via, device_matrix, vertices);
         cudaThreadSynchronize();
     }
+    gettimeofday (&tvalAfter, NULL);
 
+    printf("Time: %ld seconds\n", tvalAfter.tv_sec - tvalBefore.tv_sec);
     float *result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
  
     cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
-    
-    for(int i = 0 ; i < vertices; i++ ) 
-	{
-		cout << "\n";
-		for(int j = 0 ; j< vertices ;j++ )
-			cout << result_matrix[i * vertices + j] << " " ;
-	} 
-
-	return 0;
+    return 0;
 }
