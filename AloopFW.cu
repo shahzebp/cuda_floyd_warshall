@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <limits.h>
 #include <algorithm>
-
+#include <sys/time.h>
 #include <cuda_runtime.h>
 
 using namespace std;
@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
+    struct timeval tvalBefore, tvalAfter;
+    gettimeofday (&tvalBefore, NULL);
     for(int via = 0; via < vertices; via++) {
 	    for(int from = 0; from < vertices ; from++) {
             for(int to = 0; to < vertices;to++) {
@@ -81,18 +83,14 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    gettimeofday (&tvalAfter, NULL);
+    printf("Time: %ld microseconds\n",
+        ((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L
+        +tvalAfter.tv_usec) - tvalBefore.tv_usec
+        );
     float *result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
  
     cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
-    
-    for(int i = 0 ; i < vertices; i++ ) 
-	{
-		cout << "\n";
-		for(int j = 0 ; j< vertices ;j++ )
-			cout << result_matrix[i * vertices + j] << " " ;
-	} 
-
-	return 0;
+    return 0;
 }
