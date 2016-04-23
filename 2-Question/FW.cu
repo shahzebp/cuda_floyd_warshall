@@ -42,6 +42,13 @@ void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix
     }
 }
 
+__global__
+void A_FloydWarshall(int via, int from, int to, float *matrix, int n)
+{
+    matrix[from * n + to] = min(matrix[from * n + to],
+                            matrix[from * n + via] + matrix[via * n + to]);
+}
+
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
 {       
     dim3 blocks_per_grid((n + THREADSPB - 1) /
@@ -51,8 +58,21 @@ void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
                 Uj, Vi, Vj, device_matrix, n, vertices);           
 
     cudaThreadSynchronize();
-
 }
+
+void A_F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
+{       
+	for(int via = Uj; via < Uj + n; via++) {
+	    for(int from = Xi; from < Xi + n; from++) {
+            for(int to = Xj; to < Xj + n ; to++) {
+                if(from!=to && from!=via && to!=via) {
+                    A_FloydWarshall<<<1, 1>>>(via, from, to, device_matrix, vertices);
+			    }
+             }
+        }
+    } 
+}
+
 
 /*
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
@@ -167,7 +187,7 @@ void AFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
     int r = tilesize[d];
 
 	if (n < r)
-		F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
+		A_F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
         for (int k = 0; k < r; k++) {
