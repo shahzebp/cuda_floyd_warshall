@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<iostream>
 #include <cstdlib>
-
+#include <sys/time.h>
 #include<limits.h>
 #include<algorithm>
 #include <cilk.h>
@@ -19,25 +19,7 @@ using namespace std;
 int dist[maxVertices][maxVertices];
 
 int vertices;
-int m_val;
 
-void init(int n)
-{
-	for(int i=0;i<n;i++)
-        {
-                for(int j=0;j<n;j++)
-                {
-                        if(i==j)
-                        {
-                                dist[i][j] = 0;
-                        }
-                        else
-                        {
-                                dist[i][j] = INF;
-                        }
-                }
-        }
-}
 void FloydWarshall(int vertices)
 {
         
@@ -62,12 +44,9 @@ int cilk_main(int argc, char *argv[])
 {
 
 	char *arg_vertices = getenv("N_VERTICES");
-	char *arg_m_val    = getenv("M_VAL");
 	
-	string plotFileName = "fw_iterative_" + string(arg_vertices) + "_" + string(arg_m_val); 
 	vertices = atoi(arg_vertices);
-	m_val	 = atoi(arg_m_val);
-	
+
 	for(int i = 0 ; i < vertices ; i++ )
 	{
 		for(int j = 0 ; j< vertices; j++ )       
@@ -89,14 +68,13 @@ int cilk_main(int argc, char *argv[])
 		}
 	}	
 
-	cilk::cilkview cv;
-	cv.start();
-	
+    	struct timeval tvalBefore, tvalAfter;
+    	gettimeofday (&tvalBefore, NULL);	
 	FloydWarshall(vertices);
-
-	cv.stop();
-        cv.dump(plotFileName.c_str(), false);
-	std::cout << cv.accumulated_milliseconds()  << " millseconds" << std::endl;
-
+    	gettimeofday (&tvalAfter, NULL);
+    	printf("Time: %ld microseconds\n",
+        	((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L
+        	+tvalAfter.tv_usec) - tvalBefore.tv_usec
+        	);
 	return 0;
 }
