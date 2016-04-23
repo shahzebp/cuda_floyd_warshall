@@ -2,109 +2,77 @@
 #include<iostream>
 #include <cstdlib>
 #include<limits.h>
+#include <sys/time.h>
 #include<algorithm>
 
 using namespace std;
 
 #define maxVertices   8192
 #define INF           INT_MAX-1
+#define THREADSPB     1024
 
-float dist[maxVertices * maxVertices];
-float *device_matrix;
-float *result_matrix;
+float   dist[maxVertices * maxVertices];
+float   *device_matrix;
+float   *result_matrix;
 
-int vertices;
-int tilesize[2];
-size_t tot;
-
-void printarray(float * matrix, int vertices)
-{
-    for(int i = 0 ; i < vertices; i++ )
-        {
-                cout << "\n";
-                for(int j = 0 ; j< vertices ;j++ )
-                        cout << matrix[i * vertices + j] << " " ;
-        }
-
-	printf("\n");
-}
+int     vertices;
+int     tilesize[2];
+size_t  tot;
 
 __global__
 void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix, int n, int na)
 {
-    int j = blockIdx.x * blockDim.x + threadIdx.x + Xj;
+    int j = (blockIdx.x * blockDim.x) + threadIdx.x + Xj;
 
-    if (j >= na)
+    int i = (blockIdx.y * blockDim.y) + threadIdx.y + Xi;
+
+    if (j >= na || (i >= na))
         return;
 
-    int i = blockIdx.y * blockDim.y + threadIdx.y + Xi;
-
-    if (i >= na)
-        return;
-
-    __shared__ long inter;
+    __shared__ long thisrowkthcolumn;
 
     for (int k = Vi; k < (Vi + n); k++) {
-        if (threadIdx.x == 0) {
-            inter = matrix[i * na + k];
-        }
+        if (threadIdx.x == 0)
+            thisrowkthcolumn = matrix[i * na + k];
+        
         __syncthreads();
 
         if (i != j && i != k && j != k)
-            matrix[i * na + j] =  min(matrix[i * na + j], inter + matrix[k * na
-                    + j]);
+            matrix[i * na + j] =  min(matrix[i * na + j], thisrowkthcolumn + matrix[k * na + j]);
     }
 }
-/*
+
 __global__
-void FloydWarshall(int k, int idelta, int jdelta, float *matrix, int n, int na)
+void A_FloydWarshall(int via, int from, int to, float *matrix, int n)
 {
-    int col = (jdelta + blockIdx.x) * blockDim.x + threadIdx.x; 
-
-    if(col >= n)
-        return;
-
-    int arrayIndex = n * (idelta + blockIdx.y) + col;
-
-    __shared__ long trkc;
-
-    if(threadIdx.x == 0)
-        trkc = matrix[na * (idelta + blockIdx.y) + k];
-
-    __syncthreads();
-
-    int tckr = matrix[k*na + col];
-
-    int betterMaybe = trkc + tckr;
-
-    if(betterMaybe < matrix[arrayIndex])
-        matrix[arrayIndex] = betterMaybe;
+    matrix[from * n + to] = min(matrix[from * n + to],
+                            matrix[from * n + via] + matrix[via * n + to]);
 }
-*/
+
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
 {       
-    int threads_per_block   = 1024;
+    dim3 blocks_per_grid((n + THREADSPB - 1) /
+                                THREADSPB, n);
 
-    dim3 blocks_per_grid((n + threads_per_block - 1) /
-                                threads_per_block, n);
-
-    //for(int via = Uj; via < Uj + n; via++) {
-        FloydWarshall<<<blocks_per_grid, threads_per_block>>>(Xi, Xj, Ui,
+    FloydWarshall<<<blocks_per_grid, THREADSPB>>>(Xi, Xj, Ui,
                 Uj, Vi, Vj, device_matrix, n, vertices);           
 
     cudaThreadSynchronize();
-    /*    
-    cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
-
-    for(int i = 0 ; i < vertices; i++ ) 
-	{
-		cout << "\n";
-		for(int j = 0 ; j< vertices ;j++ )
-			cout << result_matrix[i * vertices + j] << " " ;
-	}
-
-    */
 }
+
+void A_F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
+{       
+	for(int via = Uj; via < Uj + n; via++) {
+	    for(int from = Xi; from < Xi + n; from++) {
+            for(int to = Xj; to < Xj + n ; to++) {
+                if(from!=to && from!=via && to!=via) {
+                    A_FloydWarshall<<<1, 1>>>(via, from, to, device_matrix, vertices);
+			    }
+             }
+        }
+    } 
+}
+
 
 /*
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
@@ -219,7 +187,7 @@ void AFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
     int r = tilesize[d];
 
 	if (n < r)
-		F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
+		A_F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
         for (int k = 0; k < r; k++) {
@@ -282,21 +250,34 @@ int main(int argc, char *argv[])
 			}
 		}
 	}	
+    
+    struct timeval tvalBefore, tvalAfter;
 
     tot = vertices * vertices * sizeof(float);
+    
     device_matrix = NULL;
+    
     cudaMalloc((float **)&device_matrix, tot);
 
     cudaMemcpy(device_matrix, dist, tot, cudaMemcpyHostToDevice);
 
     result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
-
+    
+    gettimeofday (&tvalBefore, NULL);
 
 	AFW(0, 0, 0, 0, 0, 0, vertices, 0);
 
-       cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
+    cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
 
+    gettimeofday (&tvalAfter, NULL);
+    
+    printf("Time: %ld microseconds\n",
+        ((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L
+        +tvalAfter.tv_usec) - tvalBefore.tv_usec
+        );
+
+    
     for(int i = 0 ; i < vertices; i++ ) 
 	{
 		cout << "\n";
