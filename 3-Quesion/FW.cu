@@ -15,20 +15,8 @@ float *device_matrix;
 float *result_matrix;
 
 int vertices;
-int tilesize[2];
+int tilesize[3];
 size_t tot;
-
-void printarray(float * matrix, int vertices)
-{
-    for(int i = 0 ; i < vertices; i++ )
-        {
-                cout << "\n";
-                for(int j = 0 ; j< vertices ;j++ )
-                        cout << matrix[i * vertices + j] << " " ;
-        }
-
-	printf("\n");
-}
 
 __global__
 void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix, int n, int na)
@@ -54,7 +42,7 @@ void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix
         for (int k = Vi; k < (Vi + n); k++) {
             work[i * na + k] = matrix[i *na + k];
             work[k * na + j] = matrix[k *na + j];
-        }
+         
 
         __syncthreads();
 
@@ -253,7 +241,9 @@ int main(int argc, char *argv[])
 	vertices = atoi(arg_vertices);
 	
     tilesize[0] = 2;
-    tilesize[1] = INF;
+    tilesize[1] = vertices/NS;
+    tilesize[2] = INF;
+
 
 	for(int i = 0 ; i < vertices ; i++ )
 	{
