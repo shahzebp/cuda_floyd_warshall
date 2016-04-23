@@ -12,66 +12,75 @@ using namespace std;
 float dist[maxVertices * maxVertices];
 float *device_matrix;
 float *result_matrix;
+
 int vertices;
 int tilesize[2];
+size_t tot;
 
-void init(int n)
+void printarray(float * matrix, int vertices)
 {
-        for(int i=0;i<n;i++)
-        {
-                for(int j=0;j<n;j++)
-                {
-                        if(i==j)
-                        {
-                                dist[i * vertices + j] = 0;
-                        }
-                        else
-                        {
-                                dist[i * vertices + j] = INF;
-                        }
-                }
-        }
-}
-
-void printarray(int vertices)
-{
-	return;
-
     for(int i = 0 ; i < vertices; i++ )
         {
                 cout << "\n";
                 for(int j = 0 ; j< vertices ;j++ )
-                        cout << dist[i * vertices + j] << " " ;
+                        cout << matrix[i * vertices + j] << " " ;
         }
 
 	printf("\n");
 }
 
 __global__
+void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix, int n, int na)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x + Xj;
+
+    if (j >= na)
+        return;
+
+    int i = blockIdx.y * blockDim.y + threadIdx.y + Xi;
+
+    if (i >= na)
+        return;
+
+    __shared__ long inter;
+
+    for (int k = Vi; k < (Vi + n); k++) {
+        if (threadIdx.x == 0) {
+            inter = matrix[i * na + k];
+        }
+        __syncthreads();
+
+        if (i != j && i != k && j != k)
+            matrix[i * na + j] =  min(matrix[i * na + j], inter + matrix[k * na
+                    + j]);
+    }
+}
+/*
+__global__
 void FloydWarshall(int k, int idelta, int jdelta, float *matrix, int n, int na)
 {
-    int col = jdelta + blockIdx.x * blockDim.x + threadIdx.x; /* This thread’s matrix column */
+    int col = (jdelta + blockIdx.x) * blockDim.x + threadIdx.x; 
 
     if(col >= n)
         return;
 
     int arrayIndex = n * (idelta + blockIdx.y) + col;
 
-    __shared__ long trkc; /* this row, kth column */
+    __shared__ long trkc;
 
     if(threadIdx.x == 0)
         trkc = matrix[na * (idelta + blockIdx.y) + k];
 
     __syncthreads();
 
-    int tckr = matrix[k*na + col]; /* this column, kth row */
+    int tckr = matrix[k*na + col];
 
     int betterMaybe = trkc + tckr;
 
     if(betterMaybe < matrix[arrayIndex])
         matrix[arrayIndex] = betterMaybe;
 }
-
+*/
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
 {       
     int threads_per_block   = 1024;
@@ -79,12 +88,24 @@ void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
     dim3 blocks_per_grid((n + threads_per_block - 1) /
                                 threads_per_block, n);
 
-        for(int via = Uj; via < Uj + n; via++)
-        {
-        FloydWarshall<<<blocks_per_grid, threads_per_block>>>(via, Xi, Xj, device_matrix, 
-                     n, vertices);           
-    }
+    //for(int via = Uj; via < Uj + n; via++) {
+        FloydWarshall<<<blocks_per_grid, threads_per_block>>>(Xi, Xj, Ui,
+                Uj, Vi, Vj, device_matrix, n, vertices);           
+
+    cudaThreadSynchronize();
+    /*    
+    cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
+
+    for(int i = 0 ; i < vertices; i++ ) 
+	{
+		cout << "\n";
+		for(int j = 0 ; j< vertices ;j++ )
+			cout << result_matrix[i * vertices + j] << " " ;
+	}
+
+    */
 }
+
 /*
 void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
 {       
@@ -126,7 +147,6 @@ void DFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    if (i != k && j != k)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
-
         }
 	}
 }
@@ -159,7 +179,6 @@ void BFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    if (i != k && j != k)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
-
         }
 	}
 }
@@ -191,7 +210,6 @@ void CFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    if (i != k && j != k)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
-
         }
 	}
 }
@@ -246,8 +264,6 @@ int main(int argc, char *argv[])
     tilesize[0] = 2;
     tilesize[1] = INF;
 
-    init(vertices);
-
 	for(int i = 0 ; i < vertices ; i++ )
 	{
 		for(int j = 0 ; j< vertices; j++ )       
@@ -267,19 +283,19 @@ int main(int argc, char *argv[])
 		}
 	}	
 
-    size_t tot = vertices * vertices * sizeof(float);
+    tot = vertices * vertices * sizeof(float);
     device_matrix = NULL;
     cudaMalloc((float **)&device_matrix, tot);
 
     cudaMemcpy(device_matrix, dist, tot, cudaMemcpyHostToDevice);
 
-
-	AFW(0, 0, 0, 0, 0, 0, vertices, 0);
-
     result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
 
-    cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
+
+	AFW(0, 0, 0, 0, 0, 0, vertices, 0);
+
+       cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
 
     for(int i = 0 ; i < vertices; i++ ) 
 	{
