@@ -5,4 +5,4 @@
 #SBATCH -p gpudev  # Queue (partition) name -- normal, development, etc.
 #SBATCH -t 01:00:00     # Run time (hh:mm:ss) - 1.5 hours
 
-N_THREADS=1024 N_VERTICES=32 ./a.out > $1
+N_THREADS=1024 N_VERTICES=2048 ./a.out > $1
