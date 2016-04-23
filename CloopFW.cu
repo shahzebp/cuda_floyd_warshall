@@ -29,19 +29,18 @@ void init(float *matrix, int n)
 __global__
 void FloydWarshall(int k, float *matrix, int n)
 {
-        int dim = blockIdx.x * blockDim.x + threadIdx.x;
-        if(dim < n)
-        {
-                for(int j=0; j<n; j++)
-                {
-                        int l = dim*n + j;
-                        int m = dim*n + k;
-                        int n1 = k*n + j;
-
-                        matrix[l] = min(matrix[l], matrix[m] + matrix[n1]);
-                }
-        }
-	__syncthreads();
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if(row < n)
+    {
+        for(int j=0; j<n; j++)
+	{
+	    int l, m, n1;
+	    l = row*n + j;
+	    m = row*n + k;
+	    n1 = k*n + j;
+	    matrix[l] = fmin(matrix[l], matrix[m] + matrix[n1]);
+	}
+    }
 }
 
 int main(int argc, char *argv[])
