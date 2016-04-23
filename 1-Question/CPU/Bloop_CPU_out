@@ -1,0 +1,10 @@
+N_VERTICES =  16  Time: 2333 microseconds
+N_VERTICES =  32  Time: 13002 microseconds
+N_VERTICES =  64  Time: 66627 microseconds
+N_VERTICES =  128  Time: 260588 microseconds
+N_VERTICES =  256  Time: 1236544 microseconds
+N_VERTICES =  512  Time: 5021341 microseconds
+N_VERTICES =  1024  Time: 20420940 microseconds
+N_VERTICES =  2048  Time: 85232453 microseconds
+N_VERTICES =  4096  Time: 366832967 microseconds
+N_VERTICES =  8192  Time: 1555538318 microseconds
