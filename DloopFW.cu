@@ -29,26 +29,23 @@ void init(float *matrix, int n)
 __global__
 void FloydWarshall(int k, float *matrix, int n)
 {
-    int col = blockIdx.x * blockDim.x + threadIdx.x; /* This thread’s matrix column */
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if(col >= n)
         return;
 
-    int arrayIndex = n * blockIdx.y + col;
+    int index_i_j = n * blockIdx.y + col;
 
-    __shared__ long trkc; /* this row, kth column */
+    __shared__ float matrix_value_i_k;
 
     if(threadIdx.x == 0)
-        trkc = matrix[n * blockIdx.y + k];
+        matrix_value_i_k = matrix[n * blockIdx.y + k];
     
     __syncthreads();
     
-    int tckr = matrix[k*n + col]; /* this column, kth row */
+    float matrix_value_k_j = matrix[k*n + col];
     
-    int betterMaybe = trkc + tckr;
-    
-    if(betterMaybe < matrix[arrayIndex])
-        matrix[arrayIndex] = betterMaybe;
+    matrix[index_i_j] = fmin(matrix[index_i_j], matrix_value_i_k + matrix_value_k_j);
 }
 
 
