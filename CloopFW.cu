@@ -89,7 +89,10 @@ int main(int argc, char *argv[])
         cudaThreadSynchronize();
     }
     gettimeofday (&tvalAfter, NULL);
-    printf("Time: %ld seconds\n", tvalAfter.tv_sec - tvalBefore.tv_sec);
+    printf("Time: %ld microseconds\n",
+	((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L
+	+tvalAfter.tv_usec) - tvalBefore.tv_usec
+	);
     float *result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
  
