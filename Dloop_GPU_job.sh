@@ -10,5 +10,6 @@ for (( c = 16; c <= $m; c = c * 2))
 do
 	export N_THREADS=1024
         export N_VERTICES=$c
-        echo "N_THREADS =" $N_THREADS " N_VERTICES = " $c >> $1
+        echo -n "N_THREADS =" $N_THREADS " N_VERTICES = " $c >> $1
+	./Dloop_GPU >> $1
 done
