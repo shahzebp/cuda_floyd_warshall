@@ -84,7 +84,8 @@ int main(int argc, char *argv[])
     cudaMemcpy(device_matrix, host_matrix, tot, cudaMemcpyHostToDevice);
 
     int blocks_per_grid = vertices + (threads_per_block - 1) /threads_per_block;
-
+    struct timeval tvalBefore, tvalAfter;
+    gettimeofday (&tvalBefore, NULL);
     for(int via = 0; via < vertices; via++) {
 	for(int j = 0; j < vertices; j++){
 
@@ -92,18 +93,14 @@ int main(int argc, char *argv[])
         cudaThreadSynchronize();
 	}
     }
-
+    gettimeofday (&tvalAfter, NULL);
+    printf("Time: %ld microseconds\n",
+        ((tvalAfter.tv_sec - tvalBefore.tv_sec)*1000000L
+        +tvalAfter.tv_usec) - tvalBefore.tv_usec
+        );
     float *result_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
  
     cudaMemcpy(result_matrix, device_matrix, tot, cudaMemcpyDeviceToHost);
-    
-    for(int i = 0 ; i < vertices; i++ ) 
-	{
-		cout << "\n";
-		for(int j = 0 ; j< vertices ;j++ )
-			cout << result_matrix[i * vertices + j] << " " ;
-	} 
-
-	return 0;
+    return 0;
 }
