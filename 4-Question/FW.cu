@@ -22,7 +22,7 @@ size_t  tot;
 __global__
 void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix, int n, int na)
 {
-    __shared__ long thisrowkthcolumn;
+    __shared__ float thisrowkthcolumn;
 
     int j = (blockIdx.x * blockDim.x) + threadIdx.x + Xj;
 
