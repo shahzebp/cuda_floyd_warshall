@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <limits.h>
 #include <algorithm>
-
+#include <sys/time.h>
 #include <cuda_runtime.h>
 
 using namespace std;
