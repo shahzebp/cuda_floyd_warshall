@@ -20,11 +20,11 @@ void FloydWarshall(int k, int i, float *matrix, int n)
 
     int arrayIndex = n * i + col; // Calculating D[i][j]
 
-    float trkc = matrix[n * i + k];   // Calculating D[i][k]
+    float matrix_value_i_k = matrix[n * i + k];   // Calculating D[i][k]
     
-    float tckr = matrix[k*n + col]; /* this column, kth row */
+    float matrix_value_k_j = matrix[k*n + col]; /* this column, kth row */
     
-    matrix[arrayIndex] = fmin(matrix[arrayIndex], trkc + tckr);
+    matrix[arrayIndex] = fmin(matrix[arrayIndex], matrix_value_i_k + matrix_value_k_j);
 }
 
 
