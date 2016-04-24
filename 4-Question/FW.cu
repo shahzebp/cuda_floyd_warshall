@@ -16,7 +16,7 @@ float   *device_matrix;
 float   *result_matrix;
 
 int     vertices;
-int     tilesize[2];
+int     tilesize[3];
 size_t  tot;
 
 __global__
@@ -230,7 +230,8 @@ int main(int argc, char *argv[])
 	vertices = atoi(arg_vertices);
 	
     tilesize[0] = 2;
-    tilesize[1] = INF;
+    tilesize[1] = vertices/64;
+    tilesize[2] = INF;
 
 	for(int i = 0 ; i < vertices ; i++ )
 	{
