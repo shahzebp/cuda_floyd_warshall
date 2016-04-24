@@ -30,7 +30,7 @@ void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix
     if (j >= na || (i >= na))
         return;
 
-    __shared__ long thisrowkthcolumn;
+    __shared__ float thisrowkthcolumn;
 
     if (n > NS) {
         for (int via = Vi; via < (Vi + n); via++) {
