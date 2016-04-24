@@ -10,22 +10,6 @@ using namespace std;
 
 #define INF           INT_MAX-1
 
-void init(float *matrix, int n)
-{
-    for (int i=0;i<n;i++) {
-        for (int j=0;j<n;j++) {
-            if(i==j)
-            {
-                matrix[i * n + j] = 0;
-            }
-            else
-            {
-                matrix[i * n + j] = INF;
-            }
-        }
-    }
-}
-
 __global__
 void FloydWarshall(int via, int from, int to, float *matrix, int n)
 {
@@ -42,8 +26,6 @@ int main(int argc, char *argv[])
    
     float *host_matrix =(float *)malloc( vertices * vertices *
                 sizeof(float));
-    
-	init(host_matrix, vertices);
     
 	for(int i = 0 ; i < vertices ; i++ ) {
 		for(int j = 0 ; j< vertices; j++ ) {
