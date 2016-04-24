@@ -1,0 +1,10 @@
+N_THREADS = 1024  N_VERTICES =  16  Time: 3977 microseconds
+N_THREADS = 1024  N_VERTICES =  32  Time: 13230 microseconds
+N_THREADS = 1024  N_VERTICES =  64  Time: 55432 microseconds
+N_THREADS = 1024  N_VERTICES =  128  Time: 251345 microseconds
+N_THREADS = 1024  N_VERTICES =  256  Time: 1109501 microseconds
+N_THREADS = 1024  N_VERTICES =  512  Time: 5739869 microseconds
+N_THREADS = 1024  N_VERTICES =  1024  Time: 32876639 microseconds
+N_THREADS = 1024  N_VERTICES =  2048  Time: 212194543 microseconds
+N_THREADS = 1024  N_VERTICES =  4096  Time: 1492446751 microseconds
+N_THREADS = 1024  N_VERTICES =  8192  
