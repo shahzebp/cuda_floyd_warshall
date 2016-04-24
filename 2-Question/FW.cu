@@ -1,9 +1,9 @@
-#include<stdio.h>
-#include<iostream>
+#include <stdio.h>
+#include <iostream>
 #include <cstdlib>
-#include<limits.h>
+#include <limits.h>
 #include <sys/time.h>
-#include<algorithm>
+#include <algorithm>
 
 using namespace std;
 
@@ -22,6 +22,8 @@ size_t  tot;
 __global__
 void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix, int n, int na)
 {
+    __shared__ long thisrowkthcolumn;
+
     int j = (blockIdx.x * blockDim.x) + threadIdx.x + Xj;
 
     int i = (blockIdx.y * blockDim.y) + threadIdx.y + Xi;
@@ -29,16 +31,14 @@ void FloydWarshall(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, float *matrix
     if (j >= na || (i >= na))
         return;
 
-    __shared__ long thisrowkthcolumn;
-
-    for (int k = Vi; k < (Vi + n); k++) {
+    for (int via = Vi; via < (Vi + n); via++) {
         if (threadIdx.x == 0)
-            thisrowkthcolumn = matrix[i * na + k];
+            thisrowkthcolumn = matrix[i * na + via];
         
         __syncthreads();
 
-        if (i != j && i != k && j != k)
-            matrix[i * na + j] =  min(matrix[i * na + j], thisrowkthcolumn + matrix[k * na + j]);
+        if (i != j && i != via && j != via)
+            matrix[i * na + j] =  min(matrix[i * na + j], thisrowkthcolumn + matrix[via * na + j]);
     }
 }
 
@@ -96,6 +96,7 @@ void F_loop_FW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n)
 	printarray(vertices);
 }
 */
+
 void DFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 
     int r = tilesize[d];
@@ -104,21 +105,20 @@ void DFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 		F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
-        for (int k = 0; k < r; k++) {
-            int p = k * (n/r);
+        for (int via = 0; via < r; via++) {
+            int p = via * (n/r);
 
             for (int i = 0; i < r; i++)
                for (int j = 0; j < r; j++) {
                    int ip = i * (n/r);
                    int jp = j * (n/r);
 
-                   if (i != k && j != k)
+                   if (i != via && j != via)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
         }
 	}
 }
-
 
 void BFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 
@@ -128,13 +128,13 @@ void BFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 		F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
-        for (int k = 0; k < r; k++) {
-            int p = k * (n/r);
+        for (int via = 0; via < r; via++) {
+            int p = via * (n/r);
 
             for (int j = 0; j < r; j++) {
                 int ip = j * (n/r);
 
-                if (j != k)
+                if (j != via)
                     BFW(Xi + p, Xj + ip , Ui + p, Uj + p, Vi + p, Vj + ip, n/r, d + 1);
 
             }
@@ -144,7 +144,7 @@ void BFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    int ip = i * (n/r);
                    int jp = j * (n/r);
 
-                   if (i != k && j != k)
+                   if (i != via && j != via)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
         }
@@ -159,13 +159,13 @@ void CFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 		F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
-        for (int k = 0; k < r; k++) {
-            int p = k * (n/r);
+        for (int via = 0; via < r; via++) {
+            int p = via * (n/r);
 
             for (int j = 0; j < r; j++) {
                 int ip = j * (n/r);
 
-                if (j != k)
+                if (j != via)
                     CFW(Xi + ip, Xj + p , Ui + ip, Uj + p, Vi + p, Vj + p, n/r, d + 1);
 
             }
@@ -175,7 +175,7 @@ void CFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    int ip = i * (n/r);
                    int jp = j * (n/r);
 
-                   if (i != k && j != k)
+                   if (i != via && j != via)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
         }
@@ -190,15 +190,15 @@ void AFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
 		A_F_loop_FW(Xi, Xj, Ui, Uj, Vi, Vj, n);
 
 	else {
-        for (int k = 0; k < r; k++) {
-            int p = k * (n/r);
+        for (int via = 0; via < r; via++) {
+            int p = via * (n/r);
 
             AFW(Xi + p, Xj + p, Ui + p, Uj + p, Vi + p, Vj + p, n/r, d + 1);
 
             for (int j = 0; j < r; j++) {
                 int ip = j * (n/r);
 
-                if (j != k)
+                if (j != via)
                     BFW(Xi + p, Xj + ip , Ui + p, Uj + p, Vi + p, Vj + ip, n/r, d + 1);
 
             }
@@ -206,7 +206,7 @@ void AFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
             for (int j = 0; j < r; j++) {
                 int ip = j * (n/r);
 
-                if (j != k)
+                if (j != via)
                     CFW(Xi + ip, Xj + p , Ui + ip, Uj + p, Vi + p, Vj + p, n/r, d + 1);
 
             }
@@ -216,7 +216,7 @@ void AFW(int Xi, int Xj, int Ui, int Uj, int Vi, int Vj, int n, int d) {
                    int ip = i * (n/r);
                    int jp = j * (n/r);
 
-                   if (i != k && j != k)
+                   if (i != via && j != via)
                        DFW(Xi + ip, Xj + jp, Ui + ip, Uj + p, Vi + p, Vj + jp, n/r, d + 1);
                 }
 
