@@ -36,17 +36,11 @@ void FloydWarshall(int k, int i, float *matrix, int n)
 
     int arrayIndex = n * i + col; // Calculating D[i][j]
 
-    __shared__ long trkc; /* this row, kth column */
-
-    if(threadIdx.x == 0)
-        trkc = matrix[n * i + k];   // Calculating D[i][k]
+    float trkc = matrix[n * i + k];   // Calculating D[i][k]
     
-    __syncthreads();
+    float tckr = matrix[k*n + col]; /* this column, kth row */
     
-    int tckr = matrix[k*n + col]; /* this column, kth row */
-    
-    int betterMaybe = trkc + tckr;
-    matrix[arrayIndex] = fmin(matrix[arrayIndex], betterMaybe);
+    matrix[arrayIndex] = fmin(matrix[arrayIndex], trkc + tckr);
 }
 
 
